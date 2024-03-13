@@ -1,0 +1,52 @@
+{
+  "name": "anypay-prices",
+  "version": "0.0.1",
+  "description": "Standalone Prices Service",
+  "main": "src/main.ts",
+  "scripts": {
+    "test": "jest",
+    "start": "ts-node src/main.ts"
+  },
+  "pkg": {
+    "targets": [
+      "latest-macos-x64"
+    ],
+    "outPath": "build/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/anypay/anypay.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/anypay/anypay/issues"
+  },
+  "homepage": "https://github.com/anypay/anypay#readme",
+  "dependencies": {
+    "@hapi/hapi": "^21.3.3",
+    "@prisma/client": "^5.10.2",
+    "axios": "^1.6.7",
+    "bignumber.js": "^9.1.2",
+    "nock": "^13.5.4",
+    "prisma": "^5.10.2",
+    "rabbi": "^1.24.0",
+    "require-all": "^3.0.0",
+    "uuid": "^9.0.1",
+    "winston": "^3.12.0",
+    "ws": "^8.16.0"
+  },
+  "devDependencies": {
+    "@hapi/joi": "^17.1.1",
+    "@types/hapi__joi": "^17.1.14",
+    "@types/jest": "^29.5.12",
+    "@types/joi": "^17.2.3",
+    "@types/node": "^20.11.25",
+    "@types/uuid": "^9.0.8",
+    "@types/ws": "^8.5.10",
+    "jest": "^29.7.0",
+    "pkg": "^5.8.1",
+    "ts-jest": "^29.1.2",
+    "ts-node": "^10.9.2"
+  }
+}
