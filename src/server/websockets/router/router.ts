@@ -45,7 +45,6 @@ class Router {
             const stat = await fs.stat(filePath);
             if (stat.isFile() && file.endsWith('.ts')) {
                 const handlerName = file.slice(0, -3); // Remove the '.js' extension
-                console.log('handlerName', handlerName)
                 const handlerModule = await import(filePath);
 
                 const handler: Handler<any> = Object.assign(handlerModule.default, { schema: handlerModule.schema });

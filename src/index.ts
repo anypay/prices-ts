@@ -17,6 +17,8 @@ import prisma from './prisma'
 
 import { Price } from './price'
 
+import { publish } from './amqp'
+
 const MAX_DECIMALS = 8;
 
 interface Amount {
@@ -140,6 +142,8 @@ export async function setPrice(price: Price): Promise<prices> {
       updatedAt: new Date()
     }
   })
+
+  await publish('price/updated', record)
 
   await prisma.priceRecords.create({
     data: {

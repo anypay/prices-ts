@@ -1,58 +1,149 @@
 import * as Hapi from '@hapi/hapi';
 import log from './log';
-import { publish } from './amqp';
-
-interface Price {
-        base: string,
-        currency: string,
-        value: number,
-        provider: string
-}
+import * as Joi from '@hapi/joi';
+import { CreatePriceConversionParams, PriceConversionResult, convertPrice, listSources, getSource, getPrice, PriceSource, Price } from './lib';
 
 export async function createServer(): Promise<Hapi.Server> {
 
     const server = Hapi.server({
-        port: process.env.PORT || 3000,
-        host: '0.0.0.0'
+        port: process.env.PRICES_HTTP_PORT || 3000,
+        host: process.env.PRICES_HTTP_HOST || '0.0.0.0'
     });
 
-    // Define a memory storage for prices
-    let prices: Price[] = [];
+    server.route({
+        method: 'GET',
+        path: '/api/sources/{source}',
+        options: {
+            response: {
+                schema: Joi.object({
+                    source: Joi.object({
+                        name: Joi.string().required(),
+                        active: Joi.boolean().required(),                
+                    })
+                })
+            }
+        },
+        handler: async (request, h) => {
+
+            const source: PriceSource = await getSource(request.params.source);
+
+            return h.response({
+                source,
+                prices: []
+            }).code(200);
+        }        
+    })
+
+    server.route({
+        method: 'GET',
+        path: '/api/sources',
+        options: {
+            response: {
+                schema: Joi.object({
+                    sources: Joi.array().items(Joi.string())
+                })
+            }
+        },
+        handler: async (request, h) => {
+
+            const sources: PriceSource[] =  await listSources()
+
+            return h.response({
+                sources
+            }).code(200);
+
+        }        
+    })
+
+    const PriceSchema = Joi.object({
+        base_currency: Joi.string().required(),
+        currency: Joi.string().required(),
+        value: Joi.number().required(),
+        source: Joi.string().required(),
+        updated_at: Joi.date().required()
+    }).label('Price')
 
     // HTTP GET endpoint to retrieve price
     server.route({
         method: 'GET',
-        path: '/api/price',
-        handler: (request, h) => {
-            const { base, currency, provider } = request.query;
+        path: '/api/prices/{currency}/{base_currency}/{source}',
+        options: {
+            validate: {
+                params: Joi.object({
+                    base_currency: Joi.string().required(),
+                    currency: Joi.string().required(),
+                    source: Joi.string().required()  
+                }).label('GetPriceParams'),
+            },
+            response: {
+                schema: Joi.object({
+                    price: PriceSchema
+                })
+            },
+        },
+        handler: async (request, h) => {
+
+            const price: Price = await getPrice({
+                base: request.params.base_currency,
+                quote: request.params.currency,
+                source: request.params.source
+            });
             // Filter prices based on query parameters
-            const filteredPrices = prices.filter(price => 
-                (!base || price.base === base) &&
-                (!currency || price.currency === currency) &&
-                (!provider || price.provider === provider)
-            );
-            return h.response(filteredPrices).code(200);
+
+            return h.response({ price }).code(200);
         }
     });
 
-    // HTTP POST endpoint to set a new price
     server.route({
         method: 'POST',
-        path: '/api/price',
-        handler: (request, h) => {
-            const price = request.payload as Price;
-            //price.id = uuidv4(); // Assign a unique ID to each price
-            prices.push(price);
-            // Broadcast the new price to all connected WebSocket clients
-            publish('anypay.prices', 'price.updated', price);
-            return h.response(price).code(201);
+        path: '/api/conversions',
+        options: {
+            validate: {
+                payload: Joi.object({
+                    base: {
+                        value: Joi.number().required(),
+                        currency: Joi.string().required(),
+                        source: Joi.string().optional()
+                    },
+                    quote: {
+                        currency: Joi.string().required(),
+                        source: Joi.string().optional()
+                    },
+                }).label('CreatePriceConversionParams'),
+            },
+            response: {
+                schema: Joi.object({
+                    conversion: Joi.object({                        
+                        base: {
+                            value: Joi.number().required(),
+                            currency: Joi.string().required(),
+                            source: Joi.string().optional()
+                        },
+                        quote: {
+                            value: Joi.number().required(),
+                            currency: Joi.string().required(),
+                            source: Joi.string().optional()
+                        },
+                        timestamp: Joi.date().required()
+                    }).label('PriceConversion')
+                })
+            },
+        },
+        handler: async (request, h) => {
+
+            const createPriceConversionParams = request.params as CreatePriceConversionParams;
+
+            const conversion: PriceConversionResult = await convertPrice(createPriceConversionParams);
+
+            return h.response({ conversion }).code(200);
         }
     });
-
 
     return server
     
 };
+
+
 
 export async function startServer(): Promise<Hapi.Server> {
     const server = await createServer();

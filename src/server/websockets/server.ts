@@ -40,8 +40,8 @@ export async function buildServer({ listener }: { listener: Server }): Promise<W
 export async function startServer(): Promise<WebSocket.Server> {
 
     const server = Hapi.server({
-        port: 3000,
-        host: 'localhost'
+        port: process.env.PRICES_WEBSOCKETS_PORT || 3000,
+        host: process.env.PRICES_WEBSOCKETS_HOST || '0.0.0.0'
     });
 
     const wsServer = await buildServer({ listener: server.listener });
