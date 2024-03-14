@@ -40,7 +40,7 @@ export async function createServer(): Promise<Hapi.Server> {
         options: {
             response: {
                 schema: Joi.object({
-                    sources: Joi.array().items(Joi.string())
+                    sources: Joi.array().items(Joi.string()) 
                 })
             }
         },
@@ -76,6 +76,7 @@ export async function createServer(): Promise<Hapi.Server> {
                 }).label('GetPriceParams'),
             },
             response: {
+                failAction: 'log',
                 schema: Joi.object({
                     price: PriceSchema
                 })
@@ -83,14 +84,27 @@ export async function createServer(): Promise<Hapi.Server> {
         },
         handler: async (request, h) => {
 
-            const price: Price = await getPrice({
-                base: request.params.base_currency,
-                quote: request.params.currency,
-                source: request.params.source
-            });
-            // Filter prices based on query parameters
+            try {
 
-            return h.response({ price }).code(200);
+                const price: Price = await getPrice({
+                    base: request.params.base_currency,
+                    quote: request.params.currency,
+                    source: request.params.source
+                });
+
+                console.log('GOT PRICE', price)
+
+                return h.response({ price }).code(200);
+
+            } catch (error) {
+
+                console.error("ERROR", error)
+
+                return h.response({ error }).code(500);
+
+
+            }
+
         }
     });
 
@@ -131,7 +145,7 @@ export async function createServer(): Promise<Hapi.Server> {
         },
         handler: async (request, h) => {
 
-            const createPriceConversionParams = request.params as CreatePriceConversionParams;
+            const createPriceConversionParams = request.payload as CreatePriceConversionParams;
 
             const conversion: PriceConversionResult = await convertPrice(createPriceConversionParams);
 

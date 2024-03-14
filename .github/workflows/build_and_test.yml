@@ -1,0 +1,34 @@
+name: Node.js CI
+
+on:
+  push:
+    branches: [ '**' ] # This runs on every push to every branch
+  pull_request:
+    branches: [ '**' ] # This also runs on pull requests to every branch
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest # The type of runner that the job will run on
+
+    strategy:
+      matrix:
+        node-version: [18.x] # Defines the Node.js version to use
+
+    steps:
+    - uses: actions/checkout@v3 # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Run tests
+      run: npm test
+
+    - name: Build
+      run: npm run build
+      # Remove the above build step if your project doesn't have a build script

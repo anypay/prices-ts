@@ -1,3 +1,5 @@
+import prisma from "./prisma";
+import { prices as PriceModel } from '@prisma/client';
 
 export type PriceSource = string;
 
@@ -36,18 +38,36 @@ export interface PriceConversionResult {
 }
 
 export async function convertPrice({ base, quote }: CreatePriceConversionParams): Promise<PriceConversionResult> {
+
+    console.log('CONVERT PRICE', {base, quote})
+
+    const basePrice = await getPrice({ base: base.currency, quote: quote.currency, source: base.source || 'default' })
+
+    console.log('basePrice', basePrice)
+
+    //const quotePrice = await getPrice({ base: quote.currency, quote: base.currency, source: quote.source || 'default' })
+
+    //console.log('quotePrice', quotePrice)
+
+    const value = base.value / basePrice.value;
+
+    console.log('value', value)
     // lookup prices from database
 
     // Convert price from base to quote
-    return {
+    const conversion: PriceConversionResult = {
         base,
         quote: {
-            value: 0,
+            value,
             currency: quote.currency,
             source: quote.source,
         },
         timestamp: new Date()
     }
+
+    console.log('conversion', conversion)
+
+    return conversion;
 }
 
 export async function listPrices(): Promise<any[]> {
@@ -61,12 +81,31 @@ export interface GetPriceParams {
 }
 
 export async function getPrice(params: GetPriceParams): Promise<Price> {
+    console.log('GET PRICE', params)
+    const price = await prisma.prices.findFirst({
+        where: {
+            base_currency: params.quote,
+            currency: params.base,
+            source: params.source
+        }
+    })
+
+
+
+    if (!price) {
+        throw new Error('Price not found')
+    }
+
+    return toPrice(price!)
+}
+
+function toPrice(price: PriceModel): Price {
     return {
-        base: params.base,
-        quote: params.quote,
-        value: 0,
-        source: params.source,
-        timestamp: new Date()
+        base: String(price.base_currency),
+        quote: price.currency,
+        value: price.value.toNumber(),
+        source: String(price.source),
+        timestamp: price.updatedAt
     }
 }
 

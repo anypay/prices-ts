@@ -24,7 +24,8 @@
   },
   "homepage": "https://github.com/anypay/anypay#readme",
   "dependencies": {
-    "@hapi/hapi": "^21.3.3",
+    "@hapi/hapi": "^21.3.6",
+    "@hapi/joi": "^17.1.1",
     "@prisma/client": "^5.10.2",
     "axios": "^1.6.7",
     "bignumber.js": "^9.1.2",
@@ -37,10 +38,8 @@
     "ws": "^8.16.0"
   },
   "devDependencies": {
-    "@hapi/joi": "^17.1.1",
     "@types/hapi__joi": "^17.1.14",
     "@types/jest": "^29.5.12",
-    "@types/joi": "^17.2.3",
     "@types/node": "^20.11.25",
     "@types/uuid": "^9.0.8",
     "@types/ws": "^8.5.10",
