@@ -133,6 +133,7 @@ export async function setPrice(price: Price): Promise<prices> {
     create: {
       base_currency: price.base,
       currency: price.currency,
+      source: price.source,
       value: price.value,
       updatedAt: new Date(),
       createdAt: new Date()

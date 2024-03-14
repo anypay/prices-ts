@@ -39,19 +39,9 @@ export interface PriceConversionResult {
 
 export async function convertPrice({ base, quote }: CreatePriceConversionParams): Promise<PriceConversionResult> {
 
-    console.log('CONVERT PRICE', {base, quote})
-
     const basePrice = await getPrice({ base: base.currency, quote: quote.currency, source: base.source || 'default' })
 
-    console.log('basePrice', basePrice)
-
-    //const quotePrice = await getPrice({ base: quote.currency, quote: base.currency, source: quote.source || 'default' })
-
-    //console.log('quotePrice', quotePrice)
-
     const value = base.value / basePrice.value;
-
-    console.log('value', value)
     // lookup prices from database
 
     // Convert price from base to quote
