@@ -2,21 +2,36 @@ name: Node.js CI
 
 on:
   push:
-    branches: [ '**' ] # This runs on every push to every branch
+    branches: [ '**' ]
   pull_request:
-    branches: [ '**' ] # This also runs on pull requests to every branch
+    branches: [ '**' ]
 
 jobs:
   build:
+    runs-on: ubuntu-latest
 
-    runs-on: ubuntu-latest # The type of runner that the job will run on
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     strategy:
       matrix:
-        node-version: [18.x] # Defines the Node.js version to use
+        node-version: [18.x]
 
     steps:
-    - uses: actions/checkout@v3 # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+    - uses: actions/checkout@v3
 
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v3
@@ -26,9 +41,23 @@ jobs:
     - name: Install dependencies
       run: npm install
 
+    - name: Setup Prisma
+      run: npx prisma generate
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/testdb
+
+    - name: Run migrations (if applicable)
+      run: npx prisma migrate deploy
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/testdb
+
     - name: Run tests
       run: npm test
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/testdb
 
-    - name: Build
-      run: npm run build
-      # Remove the above build step if your project doesn't have a build script
+    # Optional: Add a step to clean up the database after tests
+    # - name: Clean up database
+    #   run: npx prisma migrate reset --force
+    #   env:
+    #     DATABASE_URL: postgresql://postgres:postgres@localhost:5432/testdb
