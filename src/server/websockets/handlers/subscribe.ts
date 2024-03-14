@@ -9,6 +9,8 @@ import { topics as allowedTopics } from '../subscriptions';
 
 export default async function({ message, session }: Request) {
 
+    console.log("MESSAGE", message)
+
     const { payload: { topics } } = message;
 
     for (const topic of topics) {

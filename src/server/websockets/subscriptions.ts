@@ -1,5 +1,6 @@
 
 export const topics = [
+    'price/updated',
     'priceCreated',
     'priceUpdated',
     'priceRemoved',

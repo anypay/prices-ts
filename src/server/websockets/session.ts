@@ -4,6 +4,7 @@ import { Channel } from 'amqplib'
 import log from '../../log'
 import { v4 as uuid } from 'uuid';
 import router from './router/router'
+import { exchange } from '../../amqp';
 
 export default class WebsocketClientSession {
  
@@ -42,11 +43,18 @@ export default class WebsocketClientSession {
     private async onOpen() {
 
         try {
-
+            this.ws.send(JSON.stringify({
+                topic: 'websocket.connected',
+                payload: {
+                    uid: this.uid
+                }
+            
+            }))
             await this.channel.assertQueue(`websocket:${this.uid}`, { durable: false, autoDelete: true });
             await this.channel.consume(`websocket:${this.uid}`, (msg) => {
                 if (msg !== null) {
                     console.log(`Received message from queue ${this.uid}: ${msg.content.toString()}`);
+                    console.log(msg.content.toString());
                     this.ws.send(msg.content.toString());
                     this.channel?.ack(msg);
                 }
@@ -57,7 +65,7 @@ export default class WebsocketClientSession {
     }
 
     async bindWebsocketToTopic(topic: string) {
-        await this.channel.bindQueue(`websocket:${this.uid}`, 'anypay.prices', topic);
+        await this.channel.bindQueue(`websocket:${this.uid}`, exchange, topic);
     }
 
     private onClose() {

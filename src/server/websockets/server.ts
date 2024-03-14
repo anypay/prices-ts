@@ -48,6 +48,8 @@ export async function startServer(): Promise<WebSocket.Server> {
 
     server.start()
 
+    console.log(server)
+
     return wsServer;
 }
 

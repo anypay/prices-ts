@@ -3,9 +3,11 @@ const rabbi = require('rabbi');
 
 const exchange = process.env.PRICES_AMQP_EXCHANGE || 'prices';
 
-export async function publish(routingkey: string, message: any) {
+export async function publish(topic: string, payload: any) {
 
-    return rabbi.publish(exchange, routingkey, Buffer.from(JSON.stringify(message)))
+    return rabbi.publish(exchange, topic, {
+        topic, payload
+    })
 }
 
 export async function setup() {

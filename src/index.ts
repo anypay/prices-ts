@@ -7,11 +7,9 @@ export { fixer }
 
 import { BigNumber } from 'bignumber.js'
 
-import * as bittrex from './bittrex'
-
 import * as kraken from './kraken'
 
-export { bittrex, kraken }
+export { kraken }
 
 import prisma from './prisma'
 
@@ -149,9 +147,15 @@ export async function setPrice(price: SetPriceParams): Promise<PriceRecord> {
       value: price.value,
       updatedAt: new Date()
     }
-  })
+  })  
 
-  await publish('price/updated', record)
+  await publish('price/updated', {
+    base: price.base,
+    quote: price.quote,
+    value: price.value.toNumber(),
+    source: price.source,
+    updated_at: record.updatedAt
+  })
 
   await prisma.priceRecords.create({
     data: {
@@ -170,9 +174,9 @@ export async function setPrice(price: SetPriceParams): Promise<PriceRecord> {
 
 export async function updateUSDPrices() {
 
-  let prices: Price[] = await fixer.fetchCurrencies('USD');
+  let prices: NewPriceParams[] = await fixer.fetchCurrencies('USD');
 
-  await Promise.all(prices.map(async (price: Price) => {
+  await Promise.all(prices.map(async (price: NewPriceParams) => {
 
     await setPrice({
       base: price.base,
@@ -244,9 +248,10 @@ export async function setAllCryptoPrices() {
 
 export async function setAllFiatPrices(): Promise<Price[]> {
 
-  let prices: Price[] = await fixer.fetchCurrencies('USD')
+  let newPrices: NewPriceParams[] = await fixer.fetchCurrencies('USD')
+  const prices: Price[] = []
 
-  for (let price of prices) {
+  for (let price of newPrices) {
     const setPriceParams: SetPriceParams = {
       base: price.base,
       quote: price.quote,
@@ -254,7 +259,7 @@ export async function setAllFiatPrices(): Promise<Price[]> {
       source: price.source
     };
 
-    await setPrice(setPriceParams)
+    prices.push(await setPrice(setPriceParams))
   }
 
   return prices
