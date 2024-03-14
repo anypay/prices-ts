@@ -10,7 +10,7 @@ import { buildServer as startWebsocketServer } from './server/websockets/server'
 
 import { start as startCronJobs } from './cron';
 
-import { publish } from './amqp';
+import { publish, setup as setupAmqp } from './amqp';
 
 //import prisma from './prisma';
 
@@ -20,6 +20,8 @@ export default async function main() {
     // connect amqp
     publish('app.started', { timestamp: new Date() })
     log.info('amqp.connected')
+
+    await setupAmqp()
 
     // start websockets server
     const server = await createServer()
