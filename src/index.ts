@@ -15,9 +15,9 @@ export { bittrex, kraken }
 
 import prisma from './prisma'
 
-import { Price } from './price'
-
 import { publish } from './amqp'
+
+import { Price as PriceRecord } from '@prisma/client'
 
 const MAX_DECIMALS = 8;
 
@@ -71,7 +71,7 @@ async function convert(inputAmount: Amount, outputCurrency: string, precision: n
     currency: inputAmount.currency
   };
 
-  let price = await prisma.prices.findFirst({ where })
+  let price = await prisma.price.findFirst({ where })
 
   if (price) {
 
@@ -84,10 +84,10 @@ async function convert(inputAmount: Amount, outputCurrency: string, precision: n
 
   } else {
 
-    let inverse = await prisma.prices.findFirst({
+    let inverse = await prisma.price.findFirst({
       where: {
-        base_currency: inputAmount.currency,
-        currency: outputCurrency
+        quote: inputAmount.currency,
+        base: outputCurrency
       }
     })
 
@@ -109,30 +109,37 @@ async function convert(inputAmount: Amount, outputCurrency: string, precision: n
   }
 };
 
-import { prices } from '@prisma/client'
+import { Decimal } from '@prisma/client/runtime/library';
 
-export async function setPrice(price: Price): Promise<prices> {
+export interface SetPriceParams {
+  base: string;
+  quote: string;
+  value: Decimal;
+  source: string;
+}
 
-  price.value = new BigNumber(price.value).dp(MAX_DECIMALS).toNumber()
+export async function setPrice(price: SetPriceParams): Promise<PriceRecord> {
+
+  price.value = new Decimal(new BigNumber(price.value.toNumber()).dp(MAX_DECIMALS).toNumber())
 
   log.debug("price.set", price);
 
-  const existing = await prisma.prices.findFirst({
+  const existing = await prisma.price.findFirst({
     where: {
-      base_currency: price.base,
-      currency: price.currency
+      quote: price.quote,
+      base: price.base
     }
   })
 
-  const record = await prisma.prices.upsert({
+  let record = await prisma.price.upsert({
     where: {
         id: existing?.id || 0,
-        base_currency: price.base,
-        currency: price.currency
+        quote: price.quote,
+        base: price.base
     },
     create: {
-      base_currency: price.base,
-      currency: price.currency,
+      quote: price.quote,
+      base: price.base,
       source: price.source,
       value: price.value,
       updatedAt: new Date(),
@@ -149,8 +156,8 @@ export async function setPrice(price: Price): Promise<prices> {
   await prisma.priceRecords.create({
     data: {
       value: price.value,
-      base_currency: price.base,
-      currency: price.currency,
+      base: price.base,
+      quote: price.quote,
       source: price.source,
       updatedAt: new Date(),
       createdAt: new Date()
@@ -167,30 +174,32 @@ export async function updateUSDPrices() {
 
   await Promise.all(prices.map(async (price: Price) => {
 
-    await setPrice(price)
+    await setPrice({
+      base: price.base,
+      quote: price.quote,
+      value: new Decimal(price.value),
+      source: 'fixer'    
+    })
 
   }))
 
   return Promise.all(prices.map(price => {
-
-    return {
-      base: price.currency,
-      currency: price.base,
-      value: 1 / price.value,
+    const setPriceParams: SetPriceParams = {
+      base: price.base,
+      quote: price.quote,
+      value: new Decimal(1 / Number(price.value)),
       source: price.source
-    }
-  })
-  .map((price: Price) => {
-
-    return setPrice(price)
-
+    };
+    return setPrice(setPriceParams);
   }));
 
 }
 
+import { NewPriceParams } from './price'
+
 export async function setAllCryptoPrices() {
 
-  const prices: Promise<Price>[] = [];
+  const prices: Promise<NewPriceParams>[] = [];
 
 
   //prices.push(getPrice({ chain: 'BSV', currency: 'BSV' }))
@@ -213,10 +222,16 @@ export async function setAllCryptoPrices() {
   prices.push(kraken.getPrice('XLM'))
 
   await Promise.all(prices.map(async priceResult => {
+    const result: NewPriceParams = await priceResult;
 
     try {
 
-      return setPrice(await priceResult)
+      return setPrice({
+        base: result.base,
+        quote: result.quote,
+        value: new Decimal(result.value),
+        source: result.source
+      })
 
     } catch(error) {
 
@@ -232,9 +247,14 @@ export async function setAllFiatPrices(): Promise<Price[]> {
   let prices: Price[] = await fixer.fetchCurrencies('USD')
 
   for (let price of prices) {
+    const setPriceParams: SetPriceParams = {
+      base: price.base,
+      quote: price.quote,
+      value: new Decimal(price.value),
+      source: price.source
+    };
 
-    await setPrice(price)
-
+    await setPrice(setPriceParams)
   }
 
   return prices
@@ -242,20 +262,30 @@ export async function setAllFiatPrices(): Promise<Price[]> {
 }
 
 
-export async function listPrices(coins: string[]): Promise<prices[]> {
+export async function listPrices(coins: string[]): Promise<Price[]> {
 
-  return prisma.prices.findMany({
+  return prisma.price.findMany({
     where: {
-      base_currency: 'USD',
-      currency: {
+      quote: 'USD',
+      base: {
         in: coins.map(coin => coin.toUpperCase())
       }
     },
     orderBy: {
-      currency: 'asc'
+      base: 'asc'
     }
   })
 
+}
+
+interface Price {
+  id: number;
+  source: string;
+  base: string;
+  quote: string;
+  value: Decimal;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 /**

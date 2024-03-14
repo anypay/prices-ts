@@ -9,20 +9,20 @@ datasource db {
 
 model PriceRecords {
   id            Int      @id @default(autoincrement())
-  currency      String   @db.VarChar(255)
-  value         Decimal  @db.Decimal
-  base_currency String   @db.VarChar(255)
   source        String   @db.VarChar(255)
+  base          String   @db.VarChar(255)
+  quote         String   @db.VarChar(255)
+  value         Decimal  @db.Decimal
   createdAt     DateTime @db.Timestamptz(6)
   updatedAt     DateTime @db.Timestamptz(6)
 }
 
-model prices {
+model Price {
   id            Int      @id @default(autoincrement())
-  currency      String   @db.VarChar(255)
+  source        String   @db.VarChar(255)
+  base          String   @db.VarChar(255)
+  quote         String   @db.VarChar(255)
   value         Decimal  @db.Decimal
-  base_currency String?  @default("BTC") @db.VarChar(255)
   createdAt     DateTime @db.Timestamptz(6)
   updatedAt     DateTime @db.Timestamptz(6)
-  source        String?  @db.VarChar(255)
 }

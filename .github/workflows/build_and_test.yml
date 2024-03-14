@@ -7,7 +7,7 @@ on:
     branches: [ '**' ]
 
 jobs:
-  build:
+  build_and_test:
     runs-on: ubuntu-latest
 
     services:
@@ -56,8 +56,16 @@ jobs:
       env:
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/testdb
 
-    # Optional: Add a step to clean up the database after tests
-    # - name: Clean up database
-    #   run: npx prisma migrate reset --force
-    #   env:
-    #     DATABASE_URL: postgresql://postgres:postgres@localhost:5432/testdb
+  deploy:
+    needs: build_and_test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' # Ensures this job only runs on the main branch
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install Vercel CLI
+      run: npm i -g vercel  
+    - name: Deploy to Vercel
+      run: vercel --token ${{ secrets.VERCEL_TOKEN }} --prod
+      env:
+        VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+        VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}        

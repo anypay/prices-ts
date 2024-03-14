@@ -3,7 +3,7 @@ import axios from 'axios'
 
 import log from './log'
 
-import { Price } from './price'
+import { Decimal } from '@prisma/client/runtime/library'
 
 class InvalidPricePair implements Error {
   name = 'KrakenInvalidPricePair'
@@ -15,7 +15,9 @@ class InvalidPricePair implements Error {
   
 }
 
-export async function getPrice(currency: string): Promise<Price> {
+import { NewPriceParams } from './price'
+
+export async function getPrice(currency: string): Promise<NewPriceParams> {
 
   if (currency === 'DOGE') {
     currency = 'XDG'
@@ -59,9 +61,9 @@ export async function getPrice(currency: string): Promise<Price> {
     }
 
     return {
-      base: 'USD',
-      currency,
-      value,
+      quote: 'USD',
+      base: currency,
+      value: new Decimal(value),
       source: 'kraken'
     }
 

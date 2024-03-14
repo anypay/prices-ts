@@ -1,22 +1,3 @@
+import { Price } from "@prisma/client";
 
-export type PriceSource = string;
-
-export type BaseCurrency = string;
-
-export interface Price {
-
-    base: BaseCurrency;
-  
-    currency: string;
-  
-    chain?: string;
-  
-    value: number;
-  
-    source: PriceSource;
-  
-    updatedAt?: Date;
-  
-    createdAt?: Date;
-  
-  }
+export type NewPriceParams = Pick<Price, 'base' | 'value' | 'quote' | 'source'>;

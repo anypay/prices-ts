@@ -50,22 +50,9 @@
 */
 
 // Import necessary modules
+import { Price } from '@prisma/client';
 import axios from 'axios';
 import { WebSocket } from 'ws';
-
-// Define the Price interface
-export interface Price {
-  base?: string;
-  currency: string;
-  provider?: string;
-  value?: number;
-  chain?: string;
-  amount?: {
-    currency: string;
-    value: number;
-  };
-  source?: string;
-}
 
 // Consumer class
 export class Consumer {

@@ -41,34 +41,32 @@ describe('API Sources', () => {
 });
 
 describe('API Prices', () => {
-  test('GET /api/prices/{currency}/{base_currency}/{source} should return price details', async () => {
+  test('GET /api/prices/{base}/{quote}/{source} should return price details', async () => {
     // mock a Price record in the database BTC, USD, testSource
 
       const mockPrice = {
-        currency: 'USD',
-        value: new Decimal(123.45), // Assuming you're using a Decimal library
-        base_currency: 'BTC',
+        quote: 'USD',
+        value: new Decimal(72000.00), // Assuming you're using a Decimal library
+        base: 'BTC',
         createdAt: new Date(),
         updatedAt: new Date(),
         source: 'MockSource',
       };
 
-    let price = await prisma.prices.findFirst({
+    let price = await prisma.price.findFirst({
         where: {
-            currency: mockPrice.currency,
-            base_currency: mockPrice.base_currency,
+            base: mockPrice.base,
+            quote: mockPrice.quote,
             source: mockPrice.source
         },
 
     })
 
     if (!price) {
-        price = await prisma.prices.create({
+        price = await prisma.price.create({
             data: mockPrice,
         })
     }
-
-    console.log('PRICE', price)
 
     const response = await server.inject({
       method: 'GET',
@@ -85,30 +83,30 @@ describe('API Conversions', () => {
   test('POST /api/conversions should perform currency conversion', async () => {
 
     const mockPrice = {
-        currency: 'USD',
+        quote: 'USD',
         value: new Decimal(100_000), // Assuming you're using a Decimal library
-        base_currency: 'BTC',
+        base: 'BTC',
         createdAt: new Date(),
         updatedAt: new Date(),
         source: 'MockSource',
       };
 
-    let price = await prisma.prices.findFirst({
+    let price = await prisma.price.findFirst({
         where: {
-            currency: mockPrice.currency,
-            base_currency: mockPrice.base_currency,
+            quote: mockPrice.quote,
+            base: mockPrice.base,
             source: mockPrice.source
         },
 
     })
 
     if (!price) {
-        price = await prisma.prices.create({
+        price = await prisma.price.create({
             data: mockPrice,
         })
     }
     
-    await prisma.prices.update({
+    await prisma.price.update({
             where: { id: price.id },
             data: {
                     value: new Decimal(100_000)

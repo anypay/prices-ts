@@ -1,15 +1,7 @@
 import prisma from "./prisma";
-import { prices as PriceModel } from '@prisma/client';
+import { Price } from '@prisma/client';
 
 export type PriceSource = string;
-
-export interface Price {
-    base: string,
-    quote: string,
-    value: number,
-    source: string,
-    timestamp: Date
-}
 
 export interface CreatePriceConversionParams {
     base: {
@@ -39,9 +31,9 @@ export interface PriceConversionResult {
 
 export async function convertPrice({ base, quote }: CreatePriceConversionParams): Promise<PriceConversionResult> {
 
-    const basePrice = await getPrice({ base: base.currency, quote: quote.currency, source: base.source || 'default' })
+    const basePrice = await getPrice({ base: quote.currency, quote: base.currency, source: base.source || 'default' })
 
-    const value = base.value / basePrice.value;
+    const value = base.value / basePrice.value.toNumber();
     // lookup prices from database
 
     // Convert price from base to quote
@@ -54,8 +46,6 @@ export async function convertPrice({ base, quote }: CreatePriceConversionParams)
         },
         timestamp: new Date()
     }
-
-    console.log('conversion', conversion)
 
     return conversion;
 }
@@ -71,11 +61,10 @@ export interface GetPriceParams {
 }
 
 export async function getPrice(params: GetPriceParams): Promise<Price> {
-    console.log('GET PRICE', params)
-    const price = await prisma.prices.findFirst({
+    const price = await prisma.price.findFirst({
         where: {
-            base_currency: params.quote,
-            currency: params.base,
+            quote: params.quote,
+            base: params.base,
             source: params.source
         }
     })
@@ -86,18 +75,10 @@ export async function getPrice(params: GetPriceParams): Promise<Price> {
         throw new Error('Price not found')
     }
 
-    return toPrice(price!)
+    return price
 }
 
-function toPrice(price: PriceModel): Price {
-    return {
-        base: String(price.base_currency),
-        quote: price.currency,
-        value: price.value.toNumber(),
-        source: String(price.source),
-        timestamp: price.updatedAt
-    }
-}
+
 
 export async function getSource(source: PriceSource): Promise<PriceSource> {
     return source
