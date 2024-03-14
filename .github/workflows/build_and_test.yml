@@ -46,8 +46,8 @@ jobs:
       env:
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/testdb
 
-    - name: Run migrations (if applicable)
-      run: npx prisma migrate deploy
+    - name: Setup Prisma
+      run: npx prisma db push
       env:
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/testdb
 
